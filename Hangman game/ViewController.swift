@@ -8,6 +8,7 @@
 import UIKit
 
 class ViewController: UIViewController {
+    //MARK: Main properties
     var currentWord: UILabel!
     var imageView: UIImageView!
     var lettersArray = [UIButton]()
@@ -26,6 +27,7 @@ class ViewController: UIViewController {
     }
     let mistakesMax = 10
     
+    //MARK: loadView
     override func loadView() {
         super.loadView()
         
@@ -82,6 +84,7 @@ class ViewController: UIViewController {
         refresh.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(refresh)
         
+        // MARK: Constraints
         NSLayoutConstraint.activate([
             currentWord.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             currentWord.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -101,34 +104,21 @@ class ViewController: UIViewController {
         ])
         
     }
-    
+
+    //MARK: viewDidLoad
     override func viewDidLoad() {
         super.viewDidLoad()
 
         DispatchQueue.global().async { [weak self] in
             guard let path = Bundle.main.path(forResource: "words", ofType: "txt") else { return }
-            guard let wordsString = try? String(contentsOfFile: path) else { return }
+            guard let wordsString = try? String(contentsOfFile: path) else { return } //Loading from file
             self?.wordsArray = wordsString.components(separatedBy: "\n")
             
             self?.performSelector(onMainThread: #selector(Self.loadGame), with: nil, waitUntilDone: false)
         }
     }
     
-    func changeImage() {
-        guard let image = UIImage(named: "\(mistakes)") else { return }
-        
-        if self.traitCollection.userInterfaceStyle == .dark {
-            let beginImage = CIImage(image: image)
-            if let filter = CIFilter(name: "CIColorInvert") {
-                filter.setValue(beginImage, forKey: kCIInputImageKey)
-                let newImage = UIImage(ciImage: filter.outputImage!)
-                imageView.image = newImage
-            }
-        } else {
-            imageView.image = image
-        }
-    }
-    
+    //MARK: Buttons #selector
     @objc func letterTapped(_ sender: UIButton) {
         sender.isHidden = true
         
@@ -152,6 +142,37 @@ class ViewController: UIViewController {
         }
     }
     
+    @objc func loadGame() { //resets game to start
+        guessWord = wordsArray.randomElement()!.uppercased()
+        if guessWord.count >= 8 {
+            loadGame()
+        }
+        
+        mistakes = 0
+        
+        for button in lettersArray {
+            button.isHidden = false
+        }
+        currentWord.text = String(repeating: "_ ", count: guessWord.count)
+        currentWord.text?.removeLast()
+    }
+    
+    func changeImage() { //Change image with reversed color
+        guard let image = UIImage(named: "\(mistakes)") else { return }
+        
+        if self.traitCollection.userInterfaceStyle == .dark {
+            let beginImage = CIImage(image: image)
+            if let filter = CIFilter(name: "CIColorInvert") {
+                filter.setValue(beginImage, forKey: kCIInputImageKey)
+                let newImage = UIImage(ciImage: filter.outputImage!)
+                imageView.image = newImage
+            }
+        } else {
+            imageView.image = image
+        }
+    }
+    
+    //MARK: Alerts
     func showWin() {
         let ac = UIAlertController(title: "You did it!", message: "Do you want to start a new game?", preferredStyle: .alert)
         ac.addAction(UIAlertAction(title: "Yes", style: .default, handler: { [weak self] _ in
@@ -168,21 +189,11 @@ class ViewController: UIViewController {
         present(ac, animated: true)
     }
     
-    @objc func loadGame() {
-        guessWord = wordsArray.randomElement()!.uppercased()
-        if guessWord.count >= 8 {
-            loadGame()
-        }
-        
-        mistakes = 0
-        
-        for button in lettersArray {
-            button.isHidden = false
-        }
-        currentWord.text = String(repeating: "_ ", count: guessWord.count)
-        currentWord.text?.removeLast()
-    }
 
+}
+
+//MARK: extension ViewController
+extension ViewController {
     // Set the shouldAutorotate to False
     override open var shouldAutorotate: Bool {
        return false
@@ -192,5 +203,4 @@ class ViewController: UIViewController {
     override open var supportedInterfaceOrientations: UIInterfaceOrientationMask {
        return .portrait
     }
-
 }
